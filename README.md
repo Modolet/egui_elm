@@ -76,15 +76,6 @@ fn main() -> eframe::Result<()> {
 
 More runnable examples live in [`examples/`](examples/).
 
-## Development
-
-- `cargo fmt` – keep the codebase formatted.
-- `cargo check` – fast verification.
-- `cargo test` – runs the internal unit tests.
-- `cargo run --example counter` – try out the demo apps.
-
-Before publishing to crates.io, run `cargo publish --dry-run` to ensure metadata and docs are complete.
-
 ## License
 
 MIT. See [LICENSE](LICENSE) for details.
