@@ -1,6 +1,6 @@
 [package]
 name = "egui_elm"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.74"
 description = "Elm-style architecture on top of egui"
@@ -23,7 +23,12 @@ eframe = { version = "0.33.2", optional = true }
 egui = "0.33.2"
 futures = "0.3.31"
 futures-timer = "3.0.2"
-tokio = { version = "1.48.0", features = ["rt-multi-thread", "macros", "sync", "time"], optional = true }
+tokio = { version = "1.48.0", features = [
+    "rt-multi-thread",
+    "macros",
+    "sync",
+    "time",
+], optional = true }
 
 [dev-dependencies]
 chrono = "0.4.42"
