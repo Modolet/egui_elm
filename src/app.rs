@@ -1,8 +1,11 @@
-use std::sync::mpsc;
+use std::{future::Future, sync::mpsc};
 
 use eframe::egui;
 use futures::StreamExt;
-use tokio::{runtime::Runtime, task::JoinHandle};
+use tokio::{
+    runtime::{Handle, Runtime},
+    task::JoinHandle,
+};
 
 use crate::{command::Command, program::Program, subscription::Subscription, view::ViewContext};
 
@@ -17,12 +20,37 @@ where
         title,
         native_options,
         Box::new(move |_cc| {
-            let runtime = Runtime::new()?;
+            let runtime = TokioRuntime::try_current_or_new()?;
             let (model, command) = (program.init)();
             let app: Box<dyn eframe::App> = Box::new(ElmApp::new(program, model, command, runtime));
             Ok(app)
         }),
     )
+}
+
+enum TokioRuntime {
+    Owned(Runtime),
+    Handle(Handle),
+}
+
+impl TokioRuntime {
+    fn try_current_or_new() -> std::io::Result<Self> {
+        match Handle::try_current() {
+            Ok(handle) => Ok(Self::Handle(handle)),
+            Err(_) => Runtime::new().map(Self::Owned),
+        }
+    }
+
+    fn spawn<F>(&self, future: F) -> JoinHandle<F::Output>
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        match self {
+            Self::Owned(runtime) => runtime.spawn(future),
+            Self::Handle(handle) => handle.spawn(future),
+        }
+    }
 }
 
 struct ElmApp<Model, Message>
@@ -32,7 +60,7 @@ where
 {
     program: Program<Model, Message>,
     model: Model,
-    runtime: Runtime,
+    runtime: TokioRuntime,
     mailbox_sender: mpsc::Sender<Message>,
     mailbox_receiver: mpsc::Receiver<Message>,
     subscription_task: Option<JoinHandle<()>>,
@@ -47,7 +75,7 @@ where
         program: Program<Model, Message>,
         model: Model,
         initial_command: Command<Message>,
-        runtime: Runtime,
+        runtime: TokioRuntime,
     ) -> Self {
         let (mailbox_sender, mailbox_receiver) = mpsc::channel();
 
@@ -77,7 +105,7 @@ where
     }
 
     fn spawn_subscription(
-        runtime: &Runtime,
+        runtime: &TokioRuntime,
         subscription: Subscription<Message>,
         sender: mpsc::Sender<Message>,
     ) -> JoinHandle<()> {
