@@ -912,7 +912,7 @@ dependencies = [
 
 [[package]]
 name = "egui_elm"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "async-stream",
  "chrono",

@@ -1,19 +1,31 @@
-use std::{future::Future, sync::mpsc};
+use std::future::Future;
 
 use eframe::egui;
-use futures::StreamExt;
+use futures::{pin_mut, Stream, StreamExt};
 use tokio::{
     runtime::{Handle, Runtime},
+    sync::mpsc,
     task::JoinHandle,
 };
 
-use crate::{command::Command, program::Program, subscription::Subscription, view::ViewContext};
+use crate::{
+    command::Command,
+    program::Program,
+    subscription::{IntoSubscription, SubscriptionToken},
+    view::ViewContext,
+};
+
+const MAILBOX_CAPACITY: usize = 512;
 
 /// Runs the supplied Elm program using eframe's native runner.
-pub fn run<Model, Message>(program: Program<Model, Message>, title: &str) -> eframe::Result<()>
+pub fn run<Model, Message, Sub>(
+    program: Program<Model, Message, Sub>,
+    title: &str,
+) -> eframe::Result<()>
 where
     Model: Send + 'static,
     Message: Send + 'static,
+    Sub: IntoSubscription<Message> + Send + 'static,
 {
     let native_options = eframe::NativeOptions::default();
     eframe::run_native(
@@ -53,31 +65,34 @@ impl TokioRuntime {
     }
 }
 
-struct ElmApp<Model, Message>
+struct ElmApp<Model, Message, Sub>
 where
     Model: Send + 'static,
     Message: Send + 'static,
+    Sub: IntoSubscription<Message> + Send + 'static,
 {
-    program: Program<Model, Message>,
+    program: Program<Model, Message, Sub>,
     model: Model,
     runtime: TokioRuntime,
     mailbox_sender: mpsc::Sender<Message>,
     mailbox_receiver: mpsc::Receiver<Message>,
     subscription_task: Option<JoinHandle<()>>,
+    subscription_token: Option<SubscriptionToken>,
 }
 
-impl<Model, Message> ElmApp<Model, Message>
+impl<Model, Message, Sub> ElmApp<Model, Message, Sub>
 where
     Model: Send + 'static,
     Message: Send + 'static,
+    Sub: IntoSubscription<Message> + Send + 'static,
 {
     fn new(
-        program: Program<Model, Message>,
+        program: Program<Model, Message, Sub>,
         model: Model,
         initial_command: Command<Message>,
         runtime: TokioRuntime,
     ) -> Self {
-        let (mailbox_sender, mailbox_receiver) = mpsc::channel();
+        let (mailbox_sender, mailbox_receiver) = mpsc::channel(MAILBOX_CAPACITY);
 
         let mut app = Self {
             program,
@@ -86,6 +101,7 @@ where
             mailbox_sender: mailbox_sender.clone(),
             mailbox_receiver,
             subscription_task: None,
+            subscription_token: None,
         };
 
         app.enqueue_command(initial_command);
@@ -98,21 +114,24 @@ where
             let sender = self.mailbox_sender.clone();
             self.runtime.spawn(async move {
                 if let Some(message) = future.await {
-                    let _ = sender.send(message);
+                    let _ = sender.send(message).await;
                 }
             });
         }
     }
 
-    fn spawn_subscription(
+    fn spawn_stream<S>(
         runtime: &TokioRuntime,
-        subscription: Subscription<Message>,
+        stream: S,
         sender: mpsc::Sender<Message>,
-    ) -> JoinHandle<()> {
+    ) -> JoinHandle<()>
+    where
+        S: Stream<Item = Message> + Send + 'static,
+    {
         runtime.spawn(async move {
-            let mut stream = subscription.into_stream();
+            pin_mut!(stream);
             while let Some(message) = stream.next().await {
-                if sender.send(message).is_err() {
+                if sender.send(message).await.is_err() {
                     break;
                 }
             }
@@ -120,16 +139,26 @@ where
     }
 
     fn restart_subscription(&mut self) {
+        let subscription = (self.program.subscription)(&self.model);
+        let identity = subscription.identity();
+
+        if let (Some(previous), Some(current)) = (&self.subscription_token, &identity) {
+            if previous == current {
+                return;
+            }
+        }
+
         if let Some(handle) = self.subscription_task.take() {
             handle.abort();
         }
 
-        let subscription = (self.program.subscription)(&self.model);
-        self.subscription_task = Some(Self::spawn_subscription(
+        let stream = subscription.into_stream();
+        self.subscription_task = Some(Self::spawn_stream(
             &self.runtime,
-            subscription,
+            stream,
             self.mailbox_sender.clone(),
         ));
+        self.subscription_token = identity;
     }
 
     fn handle_message(&mut self, message: Message) {
@@ -139,10 +168,11 @@ where
     }
 }
 
-impl<Model, Message> Drop for ElmApp<Model, Message>
+impl<Model, Message, Sub> Drop for ElmApp<Model, Message, Sub>
 where
     Model: Send + 'static,
     Message: Send + 'static,
+    Sub: IntoSubscription<Message> + Send + 'static,
 {
     fn drop(&mut self) {
         if let Some(handle) = self.subscription_task.take() {
@@ -151,10 +181,11 @@ where
     }
 }
 
-impl<Model, Message> eframe::App for ElmApp<Model, Message>
+impl<Model, Message, Sub> eframe::App for ElmApp<Model, Message, Sub>
 where
     Model: Send + 'static,
     Message: Send + 'static,
+    Sub: IntoSubscription<Message> + Send + 'static,
 {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         while let Ok(message) = self.mailbox_receiver.try_recv() {

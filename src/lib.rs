@@ -11,6 +11,9 @@ pub mod prelude {
     #[cfg(feature = "runtime")]
     pub use crate::app::run;
     pub use crate::{
-        command::Command, program::Program, subscription::Subscription, view::ViewContext,
+        command::Command,
+        program::Program,
+        subscription::{IntoSubscription, StreamSubscription, Subscription, SubscriptionToken},
+        view::ViewContext,
     };
 }

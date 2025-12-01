@@ -13,14 +13,14 @@
 
 ```toml
 [dependencies]
-egui_elm = "0.1"
+egui_elm = "0.2"
 ```
 
 By default the crate enables the `runtime` feature, which pulls in the native runner and Tokio. To depend on only the core types, disable default features:
 
 ```toml
 [dependencies]
-egui_elm = { version = "0.1", default-features = false }
+egui_elm = { version = "0.2", default-features = false }
 ```
 
 ## Quick example

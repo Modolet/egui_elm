@@ -41,7 +41,7 @@ fn view(model: &ClockModel, ctx: &egui::Context, _ui_ctx: &ViewContext<Message>)
 }
 
 fn subscription(_model: &ClockModel) -> Subscription<Message> {
-    Subscription::interval(Duration::from_secs(1), Message::Tick(SystemTime::now()))
+    Subscription::interval_with(Duration::from_secs(1), || Message::Tick(SystemTime::now()))
 }
 
 fn main() -> eframe::Result<()> {
