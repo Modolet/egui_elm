@@ -31,9 +31,9 @@ where
     eframe::run_native(
         title,
         native_options,
-        Box::new(move |_cc| {
+        Box::new(move |cc| {
             let runtime = TokioRuntime::try_current_or_new()?;
-            let (model, command) = (program.init)();
+            let (model, command) = (program.init)(&cc.egui_ctx);
             let app: Box<dyn eframe::App> = Box::new(ElmApp::new(program, model, command, runtime));
             Ok(app)
         }),

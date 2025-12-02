@@ -10,7 +10,7 @@ enum Message {
     Tick(SystemTime),
 }
 
-fn init() -> (ClockModel, Command<Message>) {
+fn init(_ctx: &egui::Context) -> (ClockModel, Command<Message>) {
     (
         ClockModel {
             now: SystemTime::now(),

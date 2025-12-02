@@ -11,7 +11,7 @@ where
     Message: Send + 'static,
     Sub: IntoSubscription<Message> + Send + 'static,
 {
-    pub init: fn() -> (Model, Command<Message>),
+    pub init: fn(&egui::Context) -> (Model, Command<Message>),
     pub update: fn(&mut Model, Message) -> Command<Message>,
     pub view: ViewFn<Model, Message>,
     pub subscription: fn(&Model) -> Sub,
@@ -25,7 +25,7 @@ where
 {
     /// Creates a new [Program](crate::program::Program) by wiring together the init/update/view/subscription functions.
     pub fn new(
-        init: fn() -> (Model, Command<Message>),
+        init: fn(&egui::Context) -> (Model, Command<Message>),
         update: fn(&mut Model, Message) -> Command<Message>,
         view: ViewFn<Model, Message>,
         subscription: fn(&Model) -> Sub,

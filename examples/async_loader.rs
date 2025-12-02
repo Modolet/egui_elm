@@ -13,7 +13,7 @@ enum Message {
     DataLoaded(String),
 }
 
-fn init() -> (AsyncApp, Command<Message>) {
+fn init(_ctx: &egui::Context) -> (AsyncApp, Command<Message>) {
     (
         AsyncApp {
             data: None,

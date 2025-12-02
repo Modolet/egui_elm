@@ -15,7 +15,7 @@ enum Message {
     Tick,
 }
 
-fn init() -> (Counter, Command<Message>) {
+fn init(_ctx: &egui::Context) -> (Counter, Command<Message>) {
     (Counter::default(), Command::none())
 }
 

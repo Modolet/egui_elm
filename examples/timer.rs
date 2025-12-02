@@ -14,7 +14,7 @@ struct TimerApp {
     elapsed: Duration,
 }
 
-fn init() -> (TimerApp, Command<Message>) {
+fn init(_ctx: &egui::Context) -> (TimerApp, Command<Message>) {
     (
         TimerApp {
             running: false,
