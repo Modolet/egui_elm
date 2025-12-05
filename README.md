@@ -76,9 +76,9 @@ fn main() -> eframe::Result<()> {
 
 More runnable examples live in [`examples/`](examples/).
 
-### eframe 钩子
+### eframe hooks
 
-如果开启了 `runtime` 功能，你可以使用 `Program::with_save` 和 `Program::with_on_exit` 将自定义逻辑接入 eframe 的 `save` / `on_exit` 生命周期：
+When the `runtime` feature is enabled you can bridge into eframe's `save` and `on_exit` lifecycle callbacks with `Program::with_save` and `Program::with_on_exit`:
 
 ```rust
 fn save(model: &mut Counter, storage: &mut dyn eframe::Storage) {
