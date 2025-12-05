@@ -76,6 +76,27 @@ fn main() -> eframe::Result<()> {
 
 More runnable examples live in [`examples/`](examples/).
 
+### eframe 钩子
+
+如果开启了 `runtime` 功能，你可以使用 `Program::with_save` 和 `Program::with_on_exit` 将自定义逻辑接入 eframe 的 `save` / `on_exit` 生命周期：
+
+```rust
+fn save(model: &mut Counter, storage: &mut dyn eframe::Storage) {
+    storage.set_string("count", model.value.to_string());
+}
+
+fn on_exit(model: &mut Counter, _gl: Option<&glow::Context>) {
+    eprintln!("Goodbye with count = {}", model.value);
+}
+
+fn main() -> eframe::Result<()> {
+    let program = Program::new(init, update, view, subscription)
+        .with_save(save)
+        .with_on_exit(on_exit);
+    egui_elm::app::run(program, "Counter")
+}
+```
+
 ## License
 
 MIT. See [LICENSE](LICENSE) for details.

@@ -197,4 +197,16 @@ where
 
         ctx.request_repaint();
     }
+
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        if let Some(save) = self.program.save {
+            save(&mut self.model, storage);
+        }
+    }
+
+    fn on_exit(&mut self, gl: Option<&glow::Context>) {
+        if let Some(on_exit) = self.program.on_exit {
+            on_exit(&mut self.model, gl);
+        }
+    }
 }
