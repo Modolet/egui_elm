@@ -13,14 +13,14 @@
 
 ```toml
 [dependencies]
-egui_elm = "0.3"
+egui_elm = "0.3.3"
 ```
 
 By default the crate enables the `runtime` feature, which pulls in the native runner and Tokio. To depend on only the core types, disable default features:
 
 ```toml
 [dependencies]
-egui_elm = { version = "0.3", default-features = false }
+egui_elm = { version = "0.3.3", default-features = false }
 ```
 
 ## Quick example
@@ -75,6 +75,26 @@ fn main() -> eframe::Result<()> {
 ```
 
 More runnable examples live in [`examples/`](examples/).
+
+### Selecting a renderer
+
+`egui_elm::app::run` uses the default `eframe::NativeOptions`. If you need to force a specific backend
+such as `wgpu` or tweak any other option, call `run_with_native_options` instead. Enable the crate's
+`wgpu` feature so that `eframe` also builds with its `wgpu` renderer:
+
+```toml
+[dependencies]
+egui_elm = { version = "0.3.3", features = ["wgpu"] }
+```
+
+```rust
+fn main() -> eframe::Result<()> {
+    let program = Program::new(init, update, view, subscription);
+    let mut native_options = eframe::NativeOptions::default();
+    native_options.renderer = eframe::Renderer::Wgpu;
+    egui_elm::app::run_with_native_options(program, "Counter", native_options)
+}
+```
 
 ### eframe hooks
 

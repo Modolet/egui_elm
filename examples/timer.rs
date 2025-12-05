@@ -71,6 +71,12 @@ fn subscription(model: &TimerApp) -> Subscription<Message> {
 }
 
 fn main() -> eframe::Result<()> {
+    #[cfg_attr(not(feature = "wgpu"), allow(unused_mut))]
+    let mut native_options = eframe::NativeOptions::default();
+    #[cfg(feature = "wgpu")]
+    {
+        native_options.renderer = eframe::Renderer::Wgpu;
+    }
     let program = Program::new(init, update, view, subscription);
-    egui_elm::app::run(program, "Timer")
+    egui_elm::app::run_with_native_options(program, "Timer", native_options)
 }

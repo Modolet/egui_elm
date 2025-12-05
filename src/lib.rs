@@ -9,7 +9,7 @@ pub mod view;
 
 pub mod prelude {
     #[cfg(feature = "runtime")]
-    pub use crate::app::run;
+    pub use crate::app::{run, run_with_native_options};
     pub use crate::{
         command::Command,
         program::Program,

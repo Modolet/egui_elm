@@ -17,7 +17,10 @@ use crate::{
 
 const MAILBOX_CAPACITY: usize = 512;
 
-/// Runs the supplied Elm program using eframe's native runner.
+/// Runs the supplied Elm program using eframe's native runner with default options.
+///
+/// To customize the renderer (e.g. switch between `glow` and `wgpu`) or any other
+/// [`eframe::NativeOptions`], call [`run_with_native_options`].
 pub fn run<Model, Message, Sub>(
     program: Program<Model, Message, Sub>,
     title: &str,
@@ -27,7 +30,20 @@ where
     Message: Send + 'static,
     Sub: IntoSubscription<Message> + Send + 'static,
 {
-    let native_options = eframe::NativeOptions::default();
+    run_with_native_options(program, title, eframe::NativeOptions::default())
+}
+
+/// Runs the supplied Elm program using eframe's native runner and custom options.
+pub fn run_with_native_options<Model, Message, Sub>(
+    program: Program<Model, Message, Sub>,
+    title: &str,
+    native_options: eframe::NativeOptions,
+) -> eframe::Result<()>
+where
+    Model: Send + 'static,
+    Message: Send + 'static,
+    Sub: IntoSubscription<Message> + Send + 'static,
+{
     eframe::run_native(
         title,
         native_options,
